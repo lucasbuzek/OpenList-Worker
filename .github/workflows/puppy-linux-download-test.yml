@@ -1,0 +1,44 @@
+name: torrentAAR Puppy Linux official ISO download test
+
+on:
+  push:
+    branches:
+      - staging/ravensnest-files-private-20261028
+    paths:
+      - .github/workflows/puppy-linux-download-test.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: torrentaar-puppy-download-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  download-and-verify:
+    name: Download and verify official Puppy Linux ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Download latest SourceForge-published Puppy Linux ISO
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="TrixiePup64-Wayland-2606-261003.iso"
+          url="https://downloads.sourceforge.net/project/pb-gh-releases/TrixiePup64Wayland_release/${file}"
+          echo "Publisher: peabee / Github Puppy Linux Releases"
+          echo "Release: 2026-10-03"
+          echo "Source: ${url}"
+          curl --fail --location --retry 3 --retry-delay 5 --connect-timeout 30 \
+            --max-time 1500 --max-filesize 1400000000 \
+            --output "${file}" "${url}"
+          test -s "${file}"
+          echo "Downloaded bytes: $(stat -c '%s' "${file}")"
+          printf '%s  %s\n' '73fedd9d075c8bb64d84aa2a378f5c6148d23f1b41936ff4ff50e6dddc9b4bd1' "${file}" | sha256sum --check --status
+          echo "SHA-256 verified against the published SourceForge release checksum"
+          echo '### torrentAAR Puppy Linux download test' >> "${GITHUB_STEP_SUMMARY}"
+          echo '- Downloaded: TrixiePup64-Wayland-2606-261003.iso' >> "${GITHUB_STEP_SUMMARY}"
+          echo '- Release: 2026-10-03; source: SourceForge publisher peabee' >> "${GITHUB_STEP_SUMMARY}"
+          echo '- SHA256: 73fedd9d075c8bb64d84aa2a378f5c6148d23f1b41936ff4ff50e6dddc9b4bd1 (PASS)' >> "${GITHUB_STEP_SUMMARY}"
+          echo '- Runtime: temporary GitHub Actions runner; NOT persisted in the cloud portal' >> "${GITHUB_STEP_SUMMARY}"
